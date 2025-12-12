@@ -419,11 +419,7 @@ function aDF:Update()
 				
 				
 						
-				if(i=="Demoralizing Roar") then
-					aDF_frames["Demoralizing Shout"]["icon"]:SetAlpha(1)
-				else
-					aDF_frames[i]["icon"]:SetAlpha(1)
-				end
+				aDF_frames[i]["icon"]:SetAlpha(1)
 				
 				if aDF:GetDebuff(aDF_target,aDFSpells[i],1) > 1 then
 					aDF_frames[i]["nr"]:SetText(aDF:GetDebuff(aDF_target,aDFSpells[i],1))

@@ -1,5 +1,7 @@
 --########### armor and Debuff Frame
 --########### By Atreyyo @ Vanillagaming.org
+--########### Forked by Medvedev
+
 
 local has_superwow = SetAutoloot and true or false
 
@@ -36,6 +38,9 @@ gui_chantbl = {
  }
 
 local last_target_change_time = GetTime()
+local targettype_time = GetTime()
+
+local rowlength = 8		--Defines amount of debuffs shown before we break row
 
 -- translation table for debuff check on target
 
@@ -53,6 +58,8 @@ aDFSpells = {
 	["Shadow Bolt"] = "Shadow Vulnerability",
 	["Shadow Weaving"] = "Shadow Weaving",
 	["Expose Armor"] = "Expose Armor",
+	["Demoralizing Shout"] = "Demoralizing Shout",
+	["Demoralizing Roar"] = "Demoralizing Roar",
 }
 	--["Vampiric Embrace"] = "Vampiric Embrace",
 	--["Crystal Yield"] = "Crystal Yield",
@@ -73,6 +80,8 @@ aDFDebuffs = {
 	["Shadow Bolt"] = "Interface\\Icons\\Spell_Shadow_ShadowBolt",
 	["Shadow Weaving"] = "Interface\\Icons\\Spell_Shadow_BlackPlague",
 	["Expose Armor"] = "Interface\\Icons\\Ability_Warrior_Riposte",
+	["Demoralizing Shout"] = "Interface\\Icons\\Ability_Warrior_WarCry",
+	["Demoralizing Roar"] = "Interface\\Icons\\Ability_Druid_DemoralizingRoar",
 }
 	--["Vampiric Embrace"] = "Interface\\Icons\\Spell_Shadow_UnsummonBuilding",
 	--["Crystal Yield"] = "Interface\\Icons\\INV_Misc_Gem_Amethyst_01",
@@ -123,6 +132,21 @@ aDFArmorVals = {
 	[300]  = "Weapon Proc Faerie Fire", -- Dark Iron Sunderer item=11607, Puncture Armor r1 x3
 }
 
+aDFAPVals = {
+	[146] = "Demoralizing Shout (0/5)",
+	[158] = "Demoralizing Shout (1/5)",
+	[169] = "Demoralizing Shout (2/5)",
+	[181] = "Demoralizing Shout (3/5)",
+	[193] = "Demoralizing Shout (4/5)",
+	[204] = "Demoralizing Shout (5/5)",
+	[138] = "Demoralizing Roar (0/5)",
+	[149] = "Demoralizing Roar (1/5)",
+	[160] = "Demoralizing Roar (2/5)",
+	[171] = "Demoralizing Roar (3/5)",
+	[182] = "Demoralizing Roar (4/5)",
+	[193] = "Demoralizing Roar (5/5)",
+}
+
 function aDF_Default()
 	if guiOptions == nil then
 		guiOptions = {}
@@ -166,7 +190,7 @@ function aDF:Init()
 	}
 	
 	self:SetFrameStrata("BACKGROUND")
-	self:SetWidth((24+gui_Optionsxy)*7) -- Set these to whatever height/width is needed 
+	self:SetWidth((24+gui_Optionsxy)*rowlength) -- Set these to whatever height/width is needed 
 	self:SetHeight(24+gui_Optionsxy) -- for your Texture
 	self:SetPoint("CENTER",aDF_x,aDF_y)
 	self:SetMovable(1)
@@ -206,19 +230,24 @@ function aDF:Init()
 	aDF_tooltipTextL = aDF_tooltip:CreateFontString()
 	aDF_tooltipTextR = aDF_tooltip:CreateFontString()
 	aDF_tooltip:AddFontStrings(aDF_tooltipTextL,aDF_tooltipTextR)
-	--R = tip:CreateFontString()
+	--R = tip:CreateFontString()b
 	--
 	
 	f_ =  0
 	for name,texture in pairs(aDFDebuffs) do
+		
+		--FINDME
+		--aDF:SendChatMessage(name.."-"..texture, gui_chan)
+
+
 		aDFsize = 24+gui_Optionsxy
 		aDF_frames[name] = aDF_frames[name] or aDF.Create_frame(name)
 		local frame = aDF_frames[name]
 		frame:SetWidth(aDFsize)
 		frame:SetHeight(aDFsize)
 		frame:SetPoint("BOTTOMLEFT",aDFsize*f_,-aDFsize)
-		frame.icon:SetTexture(texture)
 		frame:SetFrameLevel(2)
+		frame.icon:SetTexture(texture)
 		frame:Show()
 		frame:SetScript("OnEnter", function() 
 			GameTooltip:SetOwner(frame, "ANCHOR_BOTTOMRIGHT");
@@ -250,11 +279,11 @@ function aDF:Init()
 				end
 			end
 		end)
-		f_ = f_+1
+		f_ = f_+1	--iterate "position" in grid: Seems to have NO impact on "frame:SetPoint"
 	end
 end
 
--- creates the debuff frames on load
+-- creates the debuff frames on load (MAIN FRAME)
 
 function aDF.Create_frame(name)
 	local frame = CreateFrame('Button', name, aDF)
@@ -325,9 +354,41 @@ function aDF:Update()
 			-- adfprint('target changed too soon, delaying update')
 			return
 		end
+		
+		--Checking AP stuff here
+		local ap_base, ap_posBuff, ap_negBuff = UnitAttackPower(aDF_target)
+		local apcurr = ap_base + ap_posBuff + ap_negBuff
+
+		
+		if apcurr > (aDF_apprev + 110) then		--An increase of 106 / 110 ?? corresponds to Curse of Recklessness, we want to avoid warning printing a warning for those
+		
+			--DEV NOTE: For some unknown reason the AP difference returned from Curse of Recklessness varies by a small amount. 
+			
+			local apdiff = apcurr - aDF_apprev
+			local ap_diffreason = ""
+			if aDF_apprev ~= 0 and aDFAPVals[apdiff] then
+				ap_diffreason = " (Dropped " .. aDFAPVals[apdiff] .. ")"
+			end
+			local msgAP = UnitName(aDF_target).."'s attack power: "..aDF_apprev.." -> "..apcurr..ap_diffreason
+			if UnitIsUnit(aDF_target,'target') then	
+				-- targettarget does not trigger events when it changes. this means it's hard to tell apart units with the same name, so we don't allow notifications for it
+				-- ^ TODO: this isn't true with superwow, we can tell anything apart we like, what is the correct behavior?
+				aDF:SendChatMessage(msgAP, gui_chan)
+			end
+		end
+		aDF_apprev = apcurr
+		
+		
+		
+		--Troubleshooting AP stuff
+		--DEFAULT_CHAT_FRAME:AddMessage("AP: "..apcurr.." ap diff: "..apdiff,1,1,1)
+
+		
+		
 		local armorcurr = UnitResistance(aDF_target,0)
 --		aDF.armor:SetText(UnitResistance(aDF_target,0).." ["..math.floor(((UnitResistance(aDF_target,0) / (467.5 * UnitLevel("player") + UnitResistance(aDF_target,0) - 22167.5)) * 100),1).."%]")
-		aDF.armor:SetText(armorcurr)
+		-- aDF.armor:SetText(armorcurr)		--This is standard OnEnter
+		aDF.armor:SetText("Armor:"..armorcurr.." AP:"..apcurr)
 		-- adfprint(string.format('aDF_target %s targetname %s armorcurr %s armorprev %s', aDF_target, UnitName(aDF_target), armorcurr, aDF_armorprev))
 		if armorcurr > aDF_armorprev then
 			local armordiff = armorcurr - aDF_armorprev
@@ -335,7 +396,7 @@ function aDF:Update()
 			if aDF_armorprev ~= 0 and aDFArmorVals[armordiff] then
 				diffreason = " (Dropped " .. aDFArmorVals[armordiff] .. ")"
 			end
-			local msg = UnitName(aDF_target).."'s armor: "..aDF_armorprev.." -> "..armorcurr..diffreason
+			local msg = UnitName(aDF_target).."'s armor: "..aDF_armorprev.." --> "..armorcurr..diffreason
 			-- adfprint(msg)
 			if UnitIsUnit(aDF_target,'target') then
 				-- targettarget does not trigger events when it changes. this means it's hard to tell apart units with the same name, so we don't allow notifications for it
@@ -348,13 +409,22 @@ function aDF:Update()
 
 		-- if gui_Options["Resistances"] == 1 then
 		if true then
-			aDF.res:SetText("|cffFF0000FR "..UnitResistance(aDF_target,2).." |cff00FF00NR "..UnitResistance(aDF_target,3).." |cff4AE8F5FrR "..UnitResistance(aDF_target,4).." |cff800080SR "..UnitResistance(aDF_target,5))
+			aDF.res:SetText("|cffFF0000FR "..UnitResistance(aDF_target,2).." |cff00FF00NR "..UnitResistance(aDF_target,3).." |cff004ED6FrR "..UnitResistance(aDF_target,4).." |cff6E00B8SR "..UnitResistance(aDF_target,5).." |cff00E8E8AR "..UnitResistance(aDF_target,6))
 		else
 			aDF.res:SetText("")
 		end
 		for i,v in pairs(guiOptions) do
 			if aDF:GetDebuff(aDF_target,aDFSpells[i]) then
-				aDF_frames[i]["icon"]:SetAlpha(1)
+				
+				
+				
+						
+				if(i=="Demoralizing Roar") then
+					aDF_frames["Demoralizing Shout"]["icon"]:SetAlpha(1)
+				else
+					aDF_frames[i]["icon"]:SetAlpha(1)
+				end
+				
 				if aDF:GetDebuff(aDF_target,aDFSpells[i],1) > 1 then
 					aDF_frames[i]["nr"]:SetText(aDF:GetDebuff(aDF_target,aDFSpells[i],1))
 				end
@@ -381,11 +451,12 @@ function aDF:Update()
 	else
 		aDF.armor:SetText("")
 		aDF.res:SetText("")
-		for i,v in pairs(guiOptions) do
+		for i,v in pairs(guiOptions) do		--Causes issues cause looping guiOptions forces us to have a 1:1 mapping
 			aDF_frames[i]["icon"]:SetAlpha(0.3)
 			aDF_frames[i]["nr"]:SetText("")
 			aDF_frames[i]["dur"]:SetText("")
 		end
+		
 	end
 end
 
@@ -415,14 +486,11 @@ function aDF:Sort()
 	for n, v in pairs(aDFTempTable) do
 	--DEFAULT_CHAT_FRAME:AddMessage("Name: "..v)
 		if v and aDF_frames[v] then
-			if n > 7 then
-				y_=-((24+gui_Optionsxy)*2)
-				x_=(n-1)-7
-				aDF_frames[v]:SetPoint('BOTTOMLEFT',(24+gui_Optionsxy)*x_,y_)
-			else
-				y_=-(24+gui_Optionsxy)
-				aDF_frames[v]:SetPoint('BOTTOMLEFT',(24+gui_Optionsxy)*(n-1),y_)
-			end
+			sizeadjustor = (24+gui_Optionsxy)		--Each placement is a multiple of sizeadjustor, so no icons overlap
+			y_=math.ceil(n/rowlength)
+			x_=math.mod(n-1,rowlength)
+			aDF_frames[v]:SetPoint('BOTTOMLEFT',sizeadjustor*x_,sizeadjustor*y_*-1)
+			
 		end
 	end
 end
@@ -510,7 +578,7 @@ function aDF.Options:Gui()
 			frame:SetHeight(24+gui_Optionsxy)
 			frame.nr:SetFont("Fonts\\FRIZQT__.TTF", 16+gui_Optionsxy)
 		end
-		aDF:SetWidth((24+gui_Optionsxy)*7)
+		aDF:SetWidth((24+gui_Optionsxy)*rowlength)
 		aDF:SetHeight(24+gui_Optionsxy)
 		aDF.armor:SetFont("Fonts\\FRIZQT__.TTF", 24+gui_Optionsxy)
 		aDF.res:SetFont("Fonts\\FRIZQT__.TTF", 14+gui_Optionsxy)
@@ -630,6 +698,8 @@ function aDF:OnEvent()
 		aDF_Default()
 		aDF_target = nil
 		aDF_armorprev = 30000
+		aDF_apprev = 30000 	--Intial load stuff?
+		aDF_tarnameprev = ""
 		if gui_chan == nil then gui_chan = Say end
 		aDF:Init() -- loads frame, see the function
 		aDF.Options:Gui() -- loads options frame
@@ -686,9 +756,10 @@ function aDF:OnEvent()
 			aDF_target = "targettarget"
 		end
 		if UnitCanAttack("player", "target") then
-			aDF_target = "target"
+			aDF_target = "target"			
 		end
 		aDF_armorprev = 30000
+		aDF_apprev = 30000		--Initializes values to avoid null checks & to ensure comparison always is false before 1st armor/ap calculation
 		if has_superwow then
 			_,aDF_target = UnitExists(aDF_target)
 		end
@@ -698,6 +769,11 @@ function aDF:OnEvent()
 
 		-- adfprint('PLAYER_TARGET_CHANGED ' .. tostring(aDF_target))
 		aDF:Update()
+		
+		
+		
+		
+		
 	end
 end
 

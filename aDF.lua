@@ -60,6 +60,7 @@ aDFSpells = {
 	["Expose Armor"] = "Expose Armor",
 	["Demoralizing Shout"] = "Demoralizing Shout",
 	["Demoralizing Roar"] = "Demoralizing Roar",
+	["Thunder Clap"] = "Thunder Clap",
 }
 	--["Vampiric Embrace"] = "Vampiric Embrace",
 	--["Crystal Yield"] = "Crystal Yield",
@@ -82,6 +83,7 @@ aDFDebuffs = {
 	["Expose Armor"] = "Interface\\Icons\\Ability_Warrior_Riposte",
 	["Demoralizing Shout"] = "Interface\\Icons\\Ability_Warrior_WarCry",
 	["Demoralizing Roar"] = "Interface\\Icons\\Ability_Druid_DemoralizingRoar",
+	["Thunder Clap"] = "Interface\\Icons\\Spell_Nature_ThunderClap",
 }
 	--["Vampiric Embrace"] = "Interface\\Icons\\Spell_Shadow_UnsummonBuilding",
 	--["Crystal Yield"] = "Interface\\Icons\\INV_Misc_Gem_Amethyst_01",

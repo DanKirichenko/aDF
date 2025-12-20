@@ -63,6 +63,7 @@ aDFSpells = {
 	["Thunder Clap"] = "Thunder Clap",
 	["Decaying Flesh"] = "Decaying Flesh",
 	["Thunderfury"] = "Thunderfury",
+	["Feast of Hakkar"] = "Feast of Hakkar"
 }
 	--["Vampiric Embrace"] = "Vampiric Embrace",
 	--["Crystal Yield"] = "Crystal Yield",
@@ -90,6 +91,8 @@ aDFDebuffs = {
 	["Thunder Clap"] = "Interface\\Icons\\Spell_Nature_ThunderClap",
 	["Decaying Flesh"] = "Interface\\Icons\\Spell_Shadow_LifeDrain",
 	["Thunderfury"] = "Interface\\Icons\\Spell_Nature_Cyclone",
+	["Shar'tateth"] = "Interface\\Icons\\Inv_Demonaxe",
+	["Feast of Hakkar"] = "Interface\\Icons\\INV_Chest_Cloth_42",
 }
 	--["Vampiric Embrace"] = "Interface\\Icons\\Spell_Shadow_UnsummonBuilding",
 	--["Crystal Yield"] = "Interface\\Icons\\INV_Misc_Gem_Amethyst_01",
@@ -133,7 +136,9 @@ aDFArmorVals = {
 	[290]  = "Curse of Recklessness R2",
 	[140]  = "Curse of Recklessness R1",
 	[600]  = "Annihilator x3 ?", --
-	[400]  = "Annihilator x2 ?", -- Armor Shatter spell=16928, or Puncture Armor r2 spell=17315
+	--[400]  = "Annihilator x2 ?", -- Armor Shatter spell=16928, or Puncture Armor r2 spell=17315
+	[400] = "Wind Serpent",
+	[250] = "Shar'tateth",
 	[200]  = "Annihilator x1 ?", --
 	[50]   = "Torch of Holy Flame", -- Can also be spell=13526, item=1434 but those conflict FF
 	[100]  = "Weapon Proc Faerie Fire", -- non-stacking proc spell=13752, Puncture Armor r1 x1 spell=11791
@@ -366,13 +371,9 @@ function aDF:Update()
 		
 		--Checking AP stuff here
 		local ap_base, ap_posBuff, ap_negBuff = UnitAttackPower(aDF_target)
-		local apcurr = ap_base + ap_posBuff + ap_negBuff
-
-		
+		local apcurr = ap_base + ap_posBuff + ap_negBuff	
 		if apcurr > (aDF_apprev + 110) then		--An increase of 106 / 110 ?? corresponds to Curse of Recklessness, we want to avoid warning printing a warning for those
-		
 			--DEV NOTE: For some unknown reason the AP difference returned from Curse of Recklessness varies by a small amount. 
-			
 			local apdiff = apcurr - aDF_apprev
 			local ap_diffreason = ""
 			if aDF_apprev ~= 0 and aDFAPVals[apdiff] then
@@ -387,11 +388,13 @@ function aDF:Update()
 		end
 		aDF_apprev = apcurr
 		
-		
-		
-		--Troubleshooting AP stuff
-		--DEFAULT_CHAT_FRAME:AddMessage("AP: "..apcurr.." ap diff: "..apdiff,1,1,1)
-
+		--Checking Attack Speed stuff here
+		local mainSpeedCurr, offSpeedCurr = UnitAttackSpeed(aDF_target)
+		if mainSpeedCurr < aDF_speedprev then
+			local speeddiff = aDF_speedprev - mainSpeedCurr
+			aDF:SendChatMessage("Target hits faster now.",gui_chan)
+		end
+		aDF_speedprev = mainSpeedCurr
 		
 		
 		local armorcurr = UnitResistance(aDF_target,0)
@@ -669,6 +672,9 @@ function aDF:GetDebuff(name,buff,stacks)
 		-- aDF_tooltip:SetUnitDebuff(name,a)
 		-- local aDFtext = aDF_tooltipTextL:GetText()
 		-- if string.find(aDFtext,buff) then 
+		if(n=="Faerie Fire (Feral)") then	--Hardcoding Faerie Fire (Feral) to be interpreted as Faerie Fire
+			n="Faerie Fire"
+		end	
 		if buff == n then 
 			if stacks == 1 then
 				return s
@@ -689,6 +695,9 @@ function aDF:GetDebuff(name,buff,stacks)
 		-- aDF_tooltip:SetUnitBuff(name,a)
 		-- local aDFtext = aDF_tooltipTextL:GetText()
 		-- if string.find(aDFtext,buff) then 
+		if(n=="Faerie Fire (Feral)") then	--Hardcoding Faerie Fire (Feral) to be interpreted as Faerie Fire
+			n="Faerie Fire"
+		end	
 		if buff == n then 
 			if stacks == 1 then
 				return s
@@ -713,6 +722,7 @@ function aDF:OnEvent()
 		aDF_target = nil
 		aDF_armorprev = 30000
 		aDF_apprev = 30000 	--Intial load stuff?
+		aDF_speedprev = 0
 		aDF_tarnameprev = ""
 		if gui_chan == nil then gui_chan = Say end
 		aDF:Init() -- loads frame, see the function
@@ -774,6 +784,7 @@ function aDF:OnEvent()
 		end
 		aDF_armorprev = 30000
 		aDF_apprev = 30000		--Initializes values to avoid null checks & to ensure comparison always is false before 1st armor/ap calculation
+		aDF_speedprev = 0
 		if has_superwow then
 			_,aDF_target = UnitExists(aDF_target)
 		end

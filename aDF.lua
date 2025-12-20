@@ -61,12 +61,16 @@ aDFSpells = {
 	["Demoralizing Shout"] = "Demoralizing Shout",
 	["Demoralizing Roar"] = "Demoralizing Roar",
 	["Thunder Clap"] = "Thunder Clap",
+	["Decaying Flesh"] = "Decaying Flesh",
+	["Thunderfury"] = "Thunderfury",
 }
 	--["Vampiric Embrace"] = "Vampiric Embrace",
 	--["Crystal Yield"] = "Crystal Yield",
 	--["Mage T3 6/9 Bonus"] = "Elemental Vulnerability",
 -- table with names and textures 
 
+
+-- One way to find icons: /run Print(GetItemInfo(ITEMID)) in-game. Find ItemID in DB (Check URL)
 aDFDebuffs = {
 	["Sunder Armor"] = "Interface\\Icons\\Ability_Warrior_Sunder",
 	["Armor Shatter"] = "Interface\\Icons\\INV_Axe_12",
@@ -84,6 +88,8 @@ aDFDebuffs = {
 	["Demoralizing Shout"] = "Interface\\Icons\\Ability_Warrior_WarCry",
 	["Demoralizing Roar"] = "Interface\\Icons\\Ability_Druid_DemoralizingRoar",
 	["Thunder Clap"] = "Interface\\Icons\\Spell_Nature_ThunderClap",
+	["Decaying Flesh"] = "Interface\\Icons\\Spell_Shadow_LifeDrain",
+	["Thunderfury"] = "Interface\\Icons\\Spell_Nature_Cyclone",
 }
 	--["Vampiric Embrace"] = "Interface\\Icons\\Spell_Shadow_UnsummonBuilding",
 	--["Crystal Yield"] = "Interface\\Icons\\INV_Misc_Gem_Amethyst_01",
@@ -347,6 +353,7 @@ end
 local sunderers = {}
 local shattered_at = GetTime()
 local sundered_at = GetTime()
+local thunderclap_at = GetTime()
 local anni_stacks_maxed = false
 
 function aDF:Update()
@@ -429,6 +436,10 @@ function aDF:Update()
 				if i == "Sunder Armor" then
 					local elapsed = 30 - (GetTime() - sundered_at)
 					aDF_frames[i]["nr"]:SetText(aDF:GetDebuff(aDF_target,aDFSpells[i],1))
+					aDF_frames[i]["dur"]:SetText(format("%0.f",elapsed >= 0 and elapsed or 0))
+				end
+				if i == "Thunder Clap" then
+					local elapsed = 30 - (GetTime() - thunderclap_at)
 					aDF_frames[i]["dur"]:SetText(format("%0.f",elapsed >= 0 and elapsed or 0))
 				end
 				if i == "Armor Shatter" then
@@ -521,7 +532,7 @@ function aDF.Options:Gui()
 	}
 	
 	self:SetFrameStrata("BACKGROUND")
-	self:SetWidth(400) -- Set these to whatever height/width is needed 
+	self:SetWidth(500) -- Set these to whatever height/width is needed 
 	self:SetHeight(450) -- for your Texture
 	self:SetPoint("CENTER",0,0)
 	self:SetMovable(1)
@@ -692,6 +703,11 @@ end
 
 -- event function, will load the frames we need
 function aDF:OnEvent()
+
+	--Troubleshooting
+	--print("arg1"..arg1.."/arg2:"..arg2)
+
+
 	if event == "ADDON_LOADED" and arg1 == "aDF" then
 		aDF_Default()
 		aDF_target = nil
@@ -737,7 +753,7 @@ function aDF:OnEvent()
 			sundered_at = sunderers[n]
 			sunderers[n] = nil
 		end
-
+		
 	elseif event == "CHAT_MSG_SPELL_PARTY_DAMAGE" or event == "CHAT_MSG_SPELL_FRIENDLYPLAYER_DAMAGE" then
 		local _,_,n = string.find(arg1,"^(%S+)%s?'s Sunder Armor") -- (was parried) or (missed)
 		if not n then return end

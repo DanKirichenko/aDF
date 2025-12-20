@@ -392,7 +392,7 @@ function aDF:Update()
 		local mainSpeedCurr, offSpeedCurr = UnitAttackSpeed(aDF_target)
 		if mainSpeedCurr < aDF_speedprev then
 			local speeddiff = aDF_speedprev - mainSpeedCurr
-			aDF:SendChatMessage("Target hits faster now.",gui_chan)
+			--aDF:SendChatMessage("Target hits faster now.",gui_chan)
 		end
 		aDF_speedprev = mainSpeedCurr
 		

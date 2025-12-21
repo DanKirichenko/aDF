@@ -63,7 +63,8 @@ aDFSpells = {
 	["Thunder Clap"] = "Thunder Clap",
 	["Decaying Flesh"] = "Decaying Flesh",
 	["Thunderfury"] = "Thunderfury",
-	["Feast of Hakkar"] = "Feast of Hakkar"
+	["Feast of Hakkar"] = "Feast of Hakkar",
+	["Shar'tateth"] = "Armor Shatter",
 }
 	--["Vampiric Embrace"] = "Vampiric Embrace",
 	--["Crystal Yield"] = "Crystal Yield",
@@ -400,7 +401,11 @@ function aDF:Update()
 		local armorcurr = UnitResistance(aDF_target,0)
 --		aDF.armor:SetText(UnitResistance(aDF_target,0).." ["..math.floor(((UnitResistance(aDF_target,0) / (467.5 * UnitLevel("player") + UnitResistance(aDF_target,0) - 22167.5)) * 100),1).."%]")
 		-- aDF.armor:SetText(armorcurr)		--This is standard OnEnter
-		aDF.armor:SetText("Armor:"..armorcurr.." AP:"..apcurr)
+		local armortext = tostring(armorcurr)
+		if(tonumber(armorcurr)<200) then
+			armortext = "|cffFF0000"..armortext.."|cffFFFFFF"
+		end
+		aDF.armor:SetText("Armor:"..armortext.." AP:"..apcurr)
 		-- adfprint(string.format('aDF_target %s targetname %s armorcurr %s armorprev %s', aDF_target, UnitName(aDF_target), armorcurr, aDF_armorprev))
 		if armorcurr > aDF_armorprev then
 			local armordiff = armorcurr - aDF_armorprev

@@ -65,6 +65,8 @@ aDFSpells = {
 	["Thunderfury"] = "Thunderfury",
 	["Feast of Hakkar"] = "Feast of Hakkar",
 	["Shar'tateth"] = "Armor Shatter",
+	["Mind-numbing Poison"] = "Mind-numbing Poison III",
+	["Curse of Tongues"] = "Curse of Tongues",
 }
 	--["Vampiric Embrace"] = "Vampiric Embrace",
 	--["Crystal Yield"] = "Crystal Yield",
@@ -94,6 +96,8 @@ aDFDebuffs = {
 	["Thunderfury"] = "Interface\\Icons\\Spell_Nature_Cyclone",
 	["Shar'tateth"] = "Interface\\Icons\\Inv_Demonaxe",
 	["Feast of Hakkar"] = "Interface\\Icons\\INV_Chest_Cloth_42",
+	["Mind-numbing Poison"] = "Interface\\Icons\\Spell_Nature_NullifyDisease",
+	["Curse of Tongues"] = "Interface\\Icons\\Spell_Shadow_CurseOfTounges",
 }
 	--["Vampiric Embrace"] = "Interface\\Icons\\Spell_Shadow_UnsummonBuilding",
 	--["Crystal Yield"] = "Interface\\Icons\\INV_Misc_Gem_Amethyst_01",
@@ -205,7 +209,7 @@ function aDF:Init()
 	
 	self:SetFrameStrata("BACKGROUND")
 	self:SetWidth((24+gui_Optionsxy)*rowlength) -- Set these to whatever height/width is needed 
-	self:SetHeight(24+gui_Optionsxy) -- for your Texture
+	self:SetHeight(24+gui_Optionsxy+18) -- for your Texture
 	self:SetPoint("CENTER",aDF_x,aDF_y)
 	self:SetMovable(1)
 	self:EnableMouse(1)
@@ -226,14 +230,14 @@ function aDF:Init()
 	
 	-- Armor text
 	self.armor = self:CreateFontString(nil, "OVERLAY")
-    self.armor:SetPoint("CENTER", self, "CENTER", 0, 0)
-    self.armor:SetFont("Fonts\\FRIZQT__.TTF", 24+gui_Optionsxy)
+    self.armor:SetPoint("BOTTOM", self, "BOTTOM", 0, 5)
+    self.armor:SetFont("Fonts\\FRIZQT__.TTF", 16+gui_Optionsxy)
 	self.armor:SetShadowOffset(2,-2)
     self.armor:SetText("aDF")
 
 	-- Resistance text
 	self.res = self:CreateFontString(nil, "OVERLAY")
-    self.res:SetPoint("CENTER", self, "CENTER", 0, 20+gui_Optionsxy)
+    self.res:SetPoint("TOP", self, "TOP", 0, gui_Optionsxy-5)
     self.res:SetFont("Fonts\\FRIZQT__.TTF", 14+gui_Optionsxy)
 	self.res:SetShadowOffset(2,-2)
     self.res:SetText("Resistance")
@@ -405,7 +409,7 @@ function aDF:Update()
 		if(tonumber(armorcurr)<200) then
 			armortext = "|cffFF0000"..armortext.."|cffFFFFFF"
 		end
-		aDF.armor:SetText("Armor:"..armortext.." AP:"..apcurr)
+		aDF.armor:SetText("Armor: "..armortext.." AP: "..apcurr)
 		-- adfprint(string.format('aDF_target %s targetname %s armorcurr %s armorprev %s', aDF_target, UnitName(aDF_target), armorcurr, aDF_armorprev))
 		if armorcurr > aDF_armorprev then
 			local armordiff = armorcurr - aDF_armorprev
